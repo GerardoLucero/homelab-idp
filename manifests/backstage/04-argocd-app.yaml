@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shu-platform
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.home.lab/root/talos-infra.git
+    targetRevision: main
+    path: backstage
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: backstage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

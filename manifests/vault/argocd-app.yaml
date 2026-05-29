@@ -1,0 +1,55 @@
+# ArgoCD App 1/2 — K8s resources (namespace, cert, ingress)
+# Aplicar PRIMERO — el Helm app depende de que el namespace exista
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault-infra
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.home.lab/root/talos-infra.git
+    targetRevision: main
+    path: vault
+    directory:
+      exclude: "{argocd-app.yaml}"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+---
+# ArgoCD App 2/2 — Helm chart (multi-source: chart HashiCorp + values GitLab)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://helm.releases.hashicorp.com
+      chart: vault
+      targetRevision: "0.29.1"
+      helm:
+        releaseName: vault
+        valueFiles:
+          - $values/vault-values.yaml
+    - repoURL: https://gitlab.home.lab/root/talos-infra.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vault
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true

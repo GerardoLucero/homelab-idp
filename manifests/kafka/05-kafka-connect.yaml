@@ -1,0 +1,75 @@
+# KafkaConnect con Debezium — build via Strimzi + push a Harbor
+# Strimzi descarga los plugins desde Maven Central y construye la imagen con Kaniko
+#
+# Pre-requisito — crear push secret para Harbor:
+#   kubectl create secret docker-registry harbor-push-secret -n kafka \
+#     --docker-server=harbor.home.lab \
+#     --docker-username=admin \
+#     --docker-password='H0m3lab!Harbor#2026'
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: debezium-connect
+  namespace: kafka
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  version: 4.2.0
+  replicas: 1
+  bootstrapServers: homelab-kafka-kafka-bootstrap:9092
+  build:
+    output:
+      type: docker
+      image: harbor.home.lab/library/debezium-connect:2.7.3
+      pushSecret: harbor-push-secret
+      additionalKanikoOptions:
+        - --insecure
+        - --insecure-pull
+        - --skip-tls-verify
+    plugins:
+      - name: debezium-postgres
+        artifacts:
+          - type: tgz
+            url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/2.7.3.Final/debezium-connector-postgres-2.7.3.Final-plugin.tar.gz
+      - name: debezium-mysql
+        artifacts:
+          - type: tgz
+            url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-mysql/2.7.3.Final/debezium-connector-mysql-2.7.3.Final-plugin.tar.gz
+  config:
+    group.id: debezium-connect-cluster
+    offset.storage.topic: debezium-offsets
+    config.storage.topic: debezium-configs
+    status.storage.topic: debezium-status
+    config.storage.replication.factor: 3
+    offset.storage.replication.factor: 3
+    status.storage.replication.factor: 3
+    key.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: "true"
+    value.converter.schemas.enable: "true"
+  metricsConfig:
+    type: jmxPrometheusExporter
+    valueFrom:
+      configMapKeyRef:
+        name: kafka-metrics-config
+        key: kafka-connect-metrics-config.yml
+  resources:
+    requests:
+      memory: 384Mi
+      cpu: "250m"
+    limits:
+      memory: 768Mi
+      cpu: "500m"
+  livenessProbe:
+    initialDelaySeconds: 180
+    timeoutSeconds: 15
+    failureThreshold: 20
+  readinessProbe:
+    initialDelaySeconds: 180
+    timeoutSeconds: 15
+    failureThreshold: 20
+  template:
+    pod:
+      metadata:
+        annotations:
+          sidecar.istio.io/inject: "false"

@@ -1,0 +1,45 @@
+# AUDIT — Bloquea containers con privileged: true
+# Motivo: un container privilegiado puede escapar al host y comprometer el nodo
+# Excepción actual: sonarqube (initSysctl), longhorn, istio
+# Cambiar a Enforce después de auditar todos los namespaces en PolicyReport
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-privileged-containers
+  annotations:
+    policies.kyverno.io/title: "Disallow Privileged Containers"
+    policies.kyverno.io/category: "Pod Security"
+    policies.kyverno.io/severity: "high"
+    policies.kyverno.io/description: >-
+      Containers con privileged:true tienen acceso completo al host. Solo permitido
+      en namespaces de sistema con justificación explícita.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: disallow-privileged
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kyverno
+                - longhorn-system
+                - istio-system
+                - metallb-system
+                - sonarqube   # initSysctl requiere privileged para vm.max_map_count
+      validate:
+        message: "Container '{{ element.name }}' usa privileged:true. Requiere justificación y namespace explícito."
+        foreach:
+          - list: "request.object.spec.containers"
+            pattern:
+              =(securityContext):
+                =(privileged): "false | null"
+          - list: "request.object.spec.initContainers"
+            pattern:
+              =(securityContext):
+                =(privileged): "false | null"

@@ -1,0 +1,45 @@
+# AUDIT — Todo Pod debe tener labels app y version
+# Motivo: sin labels no puedes filtrar en Grafana, Istio, kubectl, ni en alertas
+# Esencial para observabilidad y troubleshooting en un IDP
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-app-labels
+  annotations:
+    policies.kyverno.io/title: "Require App Labels"
+    policies.kyverno.io/category: "Best Practices"
+    policies.kyverno.io/severity: "low"
+    policies.kyverno.io/description: >-
+      Todos los Pods de aplicación deben tener labels 'app' y 'version'.
+      Permite filtrado en métricas, traces, y políticas de red.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-labels
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kyverno
+                - cert-manager
+                - longhorn-system
+                - istio-system
+                - metallb-system
+                - argocd
+                - monitoring
+                - kafka
+                - keda
+                - knative-serving
+      validate:
+        message: "Pod debe tener labels 'app' y 'version'. Ej: app: mi-servicio, version: 1.0.0"
+        pattern:
+          metadata:
+            labels:
+              app: "?*"
+              version: "?*"

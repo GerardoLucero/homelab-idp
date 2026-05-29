@@ -1,0 +1,37 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: homelab-wildcard
+  namespace: backstage
+spec:
+  secretName: homelab-wildcard-tls
+  issuerRef:
+    name: selfsigned-ca
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.home.lab"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backstage
+  namespace: backstage
+  annotations:
+    konghq.com/strip-path: "false"
+spec:
+  ingressClassName: kong
+  tls:
+    - hosts:
+        - backstage.home.lab
+      secretName: homelab-wildcard-tls
+  rules:
+    - host: backstage.home.lab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backstage
+                port:
+                  number: 80

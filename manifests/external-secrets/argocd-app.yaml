@@ -1,0 +1,54 @@
+# ArgoCD App 1/2 — K8s resources (namespace, SA, ClusterSecretStore)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-secrets-infra
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.home.lab/root/talos-infra.git
+    targetRevision: main
+    path: external-secrets
+    directory:
+      exclude: "{argocd-app.yaml}"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-secrets
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+---
+# ArgoCD App 2/2 — Helm chart ESO
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-secrets
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://charts.external-secrets.io
+      chart: external-secrets
+      targetRevision: "0.10.7"
+      helm:
+        releaseName: external-secrets
+        valueFiles:
+          - $values/external-secrets-values.yaml
+    - repoURL: https://gitlab.home.lab/root/talos-infra.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-secrets
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true

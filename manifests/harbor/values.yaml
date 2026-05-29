@@ -1,0 +1,41 @@
+# Harbor Helm values — sanitized template
+# Full values reference: https://github.com/goharbor/harbor-helm
+
+expose:
+  type: ingress
+  tls:
+    enabled: true
+    certSource: secret
+    secret:
+      secretName: harbor-tls
+  ingress:
+    hosts:
+      core: harbor.<YOUR_DOMAIN>
+    className: kong
+
+externalURL: https://harbor.<YOUR_DOMAIN>
+
+persistence:
+  enabled: true
+  persistentVolumeClaim:
+    registry:
+      storageClass: longhorn
+      size: 50Gi
+    database:
+      storageClass: longhorn
+      size: 10Gi
+
+harborAdminPassword: <REPLACE_ME>
+
+database:
+  internal:
+    password: <REPLACE_ME>
+
+# Enable Cosign (Notation) for image signing
+notary:
+  enabled: true
+
+# Trivy vulnerability scanning
+trivy:
+  enabled: true
+  gitHubToken: <GITHUB_TOKEN_FOR_TRIVY_DB>

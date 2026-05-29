@@ -1,0 +1,42 @@
+# Authentik Helm values — sanitized template
+# Full values reference: https://docs.goauthentik.io/docs/install-config/install/helm
+
+authentik:
+  secret_key: <REPLACE_WITH_RANDOM_50_CHAR_STRING>
+  # Generate: openssl rand -base64 36
+
+  postgresql:
+    password: <REPLACE_ME>
+
+  email:
+    host: smtp.<YOUR_MAIL_PROVIDER>
+    port: 587
+    username: <SMTP_USER>
+    password: <SMTP_PASSWORD>
+    use_tls: true
+    from: authentik@<YOUR_DOMAIN>
+
+postgresql:
+  enabled: true
+  auth:
+    password: <REPLACE_ME>
+
+redis:
+  enabled: true
+
+server:
+  ingress:
+    enabled: true
+    ingressClassName: kong
+    hosts:
+      - host: auth.<YOUR_DOMAIN>
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: authentik-tls
+        hosts:
+          - auth.<YOUR_DOMAIN>
+
+worker:
+  replicas: 1

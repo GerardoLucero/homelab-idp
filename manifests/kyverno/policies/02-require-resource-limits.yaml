@@ -1,0 +1,42 @@
+# AUDIT — Todo container debe declarar resource limits
+# Motivo: sin limits un pod puede consumir todo el nodo → OOMKill en cascada
+# Cambiar a Enforce cuando todos los workloads existentes tengan limits definidos
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resource-limits
+  annotations:
+    policies.kyverno.io/title: "Require Resource Limits"
+    policies.kyverno.io/category: "Best Practices"
+    policies.kyverno.io/severity: "medium"
+    policies.kyverno.io/description: >-
+      Todos los containers deben declarar limits de CPU y memoria para garantizar
+      estabilidad del nodo y evitar resource starvation entre workloads.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-limits
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kyverno
+                - cert-manager
+                - longhorn-system
+                - istio-system
+                - metallb-system
+      validate:
+        message: "Container '{{ element.name }}' no tiene resource limits definidos (cpu y memory)."
+        foreach:
+          - list: "request.object.spec.containers"
+            pattern:
+              resources:
+                limits:
+                  cpu: "?*"
+                  memory: "?*"

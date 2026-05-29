@@ -1,0 +1,59 @@
+# ArgoCD App 1/2 — K8s resources (namespace, secrets, cert, ingress)
+# Aplicar PRIMERO — el Helm app depende de que el secret exista
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sonarqube-infra
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.home.lab/root/talos-infra.git
+    targetRevision: main
+    path: sonarqube
+    directory:
+      # Excluye este mismo archivo y el helm app para no crear loop
+      exclude: "{argocd-app.yaml,argocd-app-helm.yaml}"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sonarqube
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+---
+# ArgoCD App 2/2 — Helm chart (multi-source: chart externo + values de GitLab)
+# Requiere ArgoCD >= 2.6 para multi-source
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sonarqube
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    # Fuente 1: Helm chart oficial de SonarQube
+    - repoURL: https://SonarSource.github.io/helm-chart-sonarqube
+      chart: sonarqube
+      targetRevision: "2026.3.0"
+      helm:
+        releaseName: sonarqube
+        valueFiles:
+          - $values/sonarqube-values.yaml
+    # Fuente 2: values.yaml desde tu repo de infra en GitLab
+    - repoURL: https://gitlab.home.lab/root/talos-infra.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sonarqube
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false   # ya creado por sonarqube-infra
+      - ServerSideApply=true

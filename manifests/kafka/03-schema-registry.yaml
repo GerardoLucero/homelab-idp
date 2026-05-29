@@ -1,0 +1,3 @@
+# Apicurio Schema Registry — REMOVIDO 2026-05-25
+# Debezium usa JsonConverter (built-in), no Avro → Apicurio no tiene uso real.
+# Reactivar si se adopta Avro en los connectores.

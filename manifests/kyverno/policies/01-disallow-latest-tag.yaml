@@ -1,0 +1,58 @@
+# ENFORCE — Bloquea imágenes con tag :latest
+# Motivo: :latest no es reproducible — un redeploy puede traer código diferente sin saberlo
+# Excluye namespaces de plataforma para no romper charts existentes
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    policies.kyverno.io/title: "Disallow Latest Tag"
+    policies.kyverno.io/category: "Best Practices"
+    policies.kyverno.io/severity: "high"
+    policies.kyverno.io/description: >-
+      El tag :latest no garantiza reproducibilidad. Cada imagen debe tener un tag
+      inmutable (semver o SHA digest) para deployments confiables.
+spec:
+  # Audit: auditar qué pods existentes usan :latest antes de cambiar a Enforce
+  # Webhook fix (2026-05-24): Flannel public-ip annotation incorrecta en talos-pdd-nik (192.168.68.56 → 192.168.68.12)
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-image-tag
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kyverno
+                - cert-manager
+                - longhorn-system
+                - istio-system
+                - metallb-system
+                - argocd
+                - gitlab
+                - harbor
+                - monitoring
+                - kafka
+                - authentik
+                - cloudflared
+                - dns
+                - keda
+                - knative-serving
+                - vault
+                - external-secrets
+                - test-cert
+                - yunbyte
+      validate:
+        message: "Tag ':latest' no permitido. Usa un tag específico (ej: nginx:1.27.0) o digest SHA."
+        foreach:
+          - list: "request.object.spec.containers"
+            pattern:
+              image: "?*:?*"
+          - list: "request.object.spec.initContainers"
+            pattern:
+              image: "?*:?*"

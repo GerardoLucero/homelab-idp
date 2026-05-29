@@ -1,0 +1,25 @@
+# ArgoCD Application — GitOps de KafkaTopic CRDs
+# Apunta al directorio kafka/ del repo de infra en GitLab
+# Strimzi Entity Operator reconcilia los KafkaTopic CRDs automáticamente
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kafka-topics
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://gitlab.home.lab/root/talos-infra.git
+    targetRevision: main
+    path: kafka
+    directory:
+      include: "07-topics.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kafka
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

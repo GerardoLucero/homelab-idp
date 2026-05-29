@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sonarqube
+  labels:
+    istio-injection: disabled
+    # Requerido por initSysctl del chart de SonarQube (vm.max_map_count para Elasticsearch)
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/enforce-version: latest

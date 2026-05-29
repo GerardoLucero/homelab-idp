@@ -1,0 +1,39 @@
+# ServiceMonitor — Prometheus scrape de Strimzi Kafka + KafkaConnect
+# kube-prometheus-stack ya está corriendo en namespace monitoring
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kafka-broker
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  endpoints:
+    - port: tcp-prometheus
+      interval: 30s
+      path: /metrics
+  namespaceSelector:
+    matchNames:
+      - kafka
+  selector:
+    matchLabels:
+      strimzi.io/kind: Kafka
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kafka-connect
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  endpoints:
+    - port: tcp-prometheus
+      interval: 30s
+      path: /metrics
+  namespaceSelector:
+    matchNames:
+      - kafka
+  selector:
+    matchLabels:
+      strimzi.io/kind: KafkaConnect

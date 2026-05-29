@@ -1,0 +1,42 @@
+# AUDIT — Containers no deben correr como root (UID 0)
+# Motivo: root en container puede escalar privilegios si hay escape
+# Muchos charts legacy corren como root — auditar antes de Enforce
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-non-root
+  annotations:
+    policies.kyverno.io/title: "Require Non-Root User"
+    policies.kyverno.io/category: "Pod Security"
+    policies.kyverno.io/severity: "medium"
+    policies.kyverno.io/description: >-
+      Los containers deben correr con runAsNonRoot:true o un UID > 0.
+      Reduce el blast radius si hay vulnerabilidad de escape de container.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-non-root-pod
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kyverno
+                - longhorn-system
+                - istio-system
+                - metallb-system
+                - cert-manager
+      validate:
+        message: "Pod debe tener securityContext.runAsNonRoot:true o runAsUser > 0."
+        anyPattern:
+          - spec:
+              securityContext:
+                runAsNonRoot: true
+          - spec:
+              securityContext:
+                runAsUser: ">0"

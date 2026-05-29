@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sonarqube
+  namespace: sonarqube
+  annotations:
+    konghq.com/strip-path: "false"
+    # SonarQube necesita timeouts altos para análisis largos
+    konghq.com/proxy-read-timeout: "3600"
+    konghq.com/proxy-send-timeout: "3600"
+    konghq.com/proxy-connect-timeout: "60"
+    konghq.com/client-body-buffer-size: "128m"
+    konghq.com/proxy-buffer-size: "128k"
+spec:
+  ingressClassName: kong
+  tls:
+    - hosts:
+        - sonarqube.home.lab
+      secretName: homelab-wildcard-tls
+  rules:
+    - host: sonarqube.home.lab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: sonarqube-sonarqube
+                port:
+                  number: 9000

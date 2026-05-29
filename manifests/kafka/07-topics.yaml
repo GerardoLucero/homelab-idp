@@ -1,0 +1,62 @@
+# KafkaTopic CRDs — GitOps de topics vía ArgoCD
+# Strimzi Entity Operator reconcilia estos CRDs contra el broker automáticamente
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: user-events
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: homelab-kafka
+spec:
+  partitions: 3
+  replicas: 3
+  config:
+    retention.ms: "604800000"       # 7 días
+    cleanup.policy: delete
+    compression.type: lz4
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: order-events
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: homelab-kafka
+spec:
+  partitions: 6
+  replicas: 3
+  config:
+    retention.ms: "2592000000"      # 30 días
+    cleanup.policy: delete
+    compression.type: lz4
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: notification-events
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: homelab-kafka
+spec:
+  partitions: 3
+  replicas: 3
+  config:
+    retention.ms: "86400000"        # 1 día
+    cleanup.policy: delete
+    compression.type: snappy
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: audit-log
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: homelab-kafka
+spec:
+  partitions: 3
+  replicas: 3
+  config:
+    retention.ms: "31536000000"     # 1 año
+    cleanup.policy: delete
+    compression.type: gzip
+    min.insync.replicas: "2"

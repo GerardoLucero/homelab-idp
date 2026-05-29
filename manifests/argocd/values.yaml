@@ -1,0 +1,41 @@
+# ArgoCD Helm values — sanitized template
+# Full values reference: https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd
+
+global:
+  domain: argocd.<YOUR_DOMAIN>
+
+server:
+  ingress:
+    enabled: true
+    ingressClassName: kong
+    hostname: argocd.<YOUR_DOMAIN>
+    tls: true
+
+configs:
+  params:
+    server.insecure: false
+  cm:
+    url: https://argocd.<YOUR_DOMAIN>
+    # OIDC with Authentik
+    oidc.config: |
+      name: Authentik
+      issuer: https://auth.<YOUR_DOMAIN>/application/o/argocd/
+      clientID: <AUTHENTIK_CLIENT_ID>
+      clientSecret: $oidc.authentik.clientSecret
+      requestedScopes:
+        - openid
+        - profile
+        - email
+        - groups
+  rbac:
+    policy.default: role:readonly
+    policy.csv: |
+      g, ArgoCD Admins, role:admin
+
+  secret:
+    # argocdServerAdminPassword: bcrypt hash of your admin password
+    # Generate with: htpasswd -nbBC 10 "" <password> | tr -d ':\n' | sed 's/$2y/$2a/'
+    argocdServerAdminPassword: <BCRYPT_HASH>
+
+notifications:
+  enabled: true

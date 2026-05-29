@@ -1,0 +1,18 @@
+# NEVER commit these
+kubeconfig
+talosconfig
+*.iso
+secrets.yaml
+*-secret.yaml
+*-secrets.yaml
+*.key
+*.pem
+*.p12
+*.pfx
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
