@@ -145,20 +145,27 @@ This repo contains infrastructure manifests, Helm values templates, and architec
 
 ---
 
-## DevSecOps Pipeline
+## 🔒 DevSecOps Pipeline (git push → Pod in 4 minutes)
 
-Every service deployed through this cluster goes through:
+Every service deployed through this cluster goes through **4 automated stages**:
 
 ```
-git push
-  → GitLab CI
-      ├── Gitleaks       (secret scanning)
-      ├── SonarQube      (SAST + quality gate)
-      ├── Trivy          (container CVE scan)
-      ├── Cosign sign    (image signing)
-      └── ArgoCD sync    (GitOps deploy)
-              └── Kyverno (policy enforcement at admission)
+Stage 1: QUALITY          Stage 2: BUILD           Stage 3: RELEASE        Stage 4: DEPLOY
+├─ gitleaks              ├─ build (OCI image)     ├─ cosign (sign)        ├─ argocd (sync)
+└─ test (SonarQube)      └─ push to Harbor        ├─ harbor-catalog       ├─ cosign-verify
+                                                  └─ trivy (CVE scan)     ├─ gitops
+                                                                          └─ notify
 ```
+
+![GitLab CI Pipeline — DevSecOps stages with 4-minute deployment](./docs/pipeline-devsecops.jpg)
+
+**Pipeline metrics (real run):**
+- Total time: **3m 52s** (quality + build + release + deploy)
+- Stages: 4 (quality → build → release → deploy)
+- Jobs: 10 (all passed ✓)
+- Security gates: 3 (Gitleaks, SonarQube, Trivy CVE scan)
+- Signature verification: Cosign + Harbor
+- Deployment: ArgoCD + Kyverno admission control
 
 ---
 
