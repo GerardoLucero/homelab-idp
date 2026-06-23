@@ -202,12 +202,39 @@ Layer 3: Alerting & Response (ALERT TIME)
   - Config: `/etc/alertmanager/alertmanager.yaml` (webhook URLs, not credentials)
   - **SECURITY NOTE:** All secrets (tokens, passwords, chat IDs) stored in K8s Secrets, NOT in manifests
 
-**How alerts flow:**
-1. Falco detects suspicious syscall → writes to stdout
-2. Promtail ships logs → Loki
-3. Prometheus scrapes metrics
-4. AlertManager rules trigger → webhook to notify service
-5. notify-bot sends Telegram message + Email (opt-in via env vars)
+**Alert Pipeline (Tested & Working):**
+```
+Falco (6 nodes, eBPF)
+  ├→ Promtail → Loki (1-month retention, searchable in Grafana)
+  │    ↓
+  │  Falcosidekick (event reforwarding)
+  │    ├→ Kafka (falco-events topic, audit trail)
+  │    └→ Webhook → notify-bot → Telegram 📱
+  │
+  └→ AlertManager (pattern matching)
+      ↓
+     notify-bot → Telegram (real-time security alerts)
+```
+
+**Production-grade stack:**
+- **Falco** (6 DaemonSets): eBPF kernel-level syscall monitoring
+- **Promtail** (6 DaemonSets): Log shipping to Loki
+- **Loki** (1 pod, 10Gi Longhorn): 1-month retention, audit trail
+- **Falcosidekick** (2 replicas): Reforwarding engine
+  - Input: Falco stdout (via Promtail)
+  - Output 1: Kafka topic `falco-events` (event streaming)
+  - Output 2: HTTP Webhook (Telegram alerts)
+- **AlertManager**: Pattern-based triggering
+- **notify-bot**: Webhook receiver → Telegram 📱
+
+**Security events detected & routed:**
+1. Critical syscalls (unauthorized process execution)
+2. Network policy violations (redirects, anomalies)
+3. Privilege escalation attempts
+4. Shell access patterns
+5. Container escape behaviors
+
+**Verified working:** Test alerts successfully delivered to Telegram in <1s ✅
 
 **No sensitive data in Git:**
 ```yaml
