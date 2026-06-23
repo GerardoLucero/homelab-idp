@@ -23,9 +23,9 @@ A developer needs to deploy a microservice. Today:
 ```mermaid
 graph TB
     subgraph External["External Users"]
-        DEV["👨‍💻 Developers"]
-        DEVOPS["🔧 DevOps Engineers"]
-        SEC["🔒 Security Teams"]
+        DEV["Developers"]
+        DEVOPS["DevOps Engineers"]
+        SEC["Security Teams"]
     end
     
     subgraph IDP["Internal Developer Platform"]
@@ -66,7 +66,7 @@ The entire system runs within a single Kubernetes cluster on Talos Linux.
 
 ```mermaid
 graph TB
-    subgraph TALOS["🐧 Talos Linux Cluster (6 nodes)"]
+    subgraph TALOS["Talos Linux Cluster (6 nodes)"]
         subgraph CP["Control Plane (3 nodes)"]
             ETCD["etcd<br/>(Distributed DB)"]
             APISERVER["API Server"]
@@ -259,16 +259,16 @@ sequenceDiagram
 
 ```mermaid
 graph TB
-    subgraph UNTRUSTED["🌐 UNTRUSTED<br/>(Internet)"]
+    subgraph UNTRUSTED["UNTRUSTED (Internet)"]
         USERS["External Users"]
     end
     
-    subgraph GATEWAY["🔐 SEMI-TRUSTED<br/>(Boundary)"]
+    subgraph GATEWAY["SEMI-TRUSTED (Boundary)"]
         CF["Cloudflare Tunnel<br/>- DDoS Protection<br/>- TLS Termination"]
         KONG["Kong Gateway<br/>- Rate Limiting<br/>- OIDC Enforcement"]
     end
     
-    subgraph CLUSTER["✅ TRUSTED<br/>(Inside Cluster)"]
+    subgraph CLUSTER["TRUSTED (Inside Cluster)"]
         AUTH["Authentik<br/>(OIDC Provider)"]
         K8S["Kubernetes Cluster<br/>- mTLS Service-to-Service<br/>- RBAC Enforcement<br/>- Network Policies<br/>- Kyverno Admission"]
         VAULT["Vault<br/>(Secret Management)"]
