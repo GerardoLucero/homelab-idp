@@ -75,6 +75,21 @@ This repo contains infrastructure manifests, Helm values templates, and architec
 
 ---
 
+## 🏠 The Hardware (Production-Grade, Not Virtualized)
+
+![Homelab Infrastructure — 6 HP EliteDesk 800 G4 Mini nodes](./docs/homelab-hardware.jpg)
+
+**6× HP EliteDesk 800 G4 Mini**
+- CPU: Intel Core i5-8500T (6 cores) × 6 = **36 cores** total
+- RAM: 16GB DDR4 × 6 = **96GB** total
+- Storage: 256GB NVMe + 1TB HDD per node (Longhorn HA)
+- Network: 1GbE (gigabit Ethernet cluster)
+- Power: UPS (CyberPower CP1500PFCLCDA) for failover
+
+**Why this matters:** Real infrastructure teaches you constraints — power limits, network latency, disk I/O contention. Not possible in cloud simulators.
+
+---
+
 ## 🏗 How It Works
 
 ```
@@ -114,16 +129,6 @@ This repo contains infrastructure manifests, Helm values templates, and architec
 
 **See the detailed 4-level C4 architecture:**  
 📖 [**docs/C4-ARCHITECTURE.md**](./docs/C4-ARCHITECTURE.md)
-
----
-
-## Hardware
-
-6× **HP EliteDesk 800 G4 Mini**
-- CPU: Intel Core i5-8500T (6 cores)
-- RAM: 16GB DDR4
-- Storage: 256GB NVMe SSD + 1TB HDD (Longhorn)
-- Network: 1GbE
 
 ---
 
