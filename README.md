@@ -132,6 +132,19 @@ This repo contains infrastructure manifests, Helm values templates, and architec
 
 ---
 
+## 🎬 In Action: Backstage Golden Path
+
+![Backstage IDP — DevSecOps Service creation template](./docs/backstage-create-service.jpg)
+
+**What you're looking at:**
+- **Portal**: Backstage running on homelab cluster
+- **Template**: "DevSecOps Service" — one-click service creation
+- **Form**: Owner, service name, description, language, database choice
+- **Pipeline**: 4-step wizard (Service Details → Stack → Database → Review → Create)
+- **Result**: Repo + pipeline + K8s manifests + secrets in Vault (automated in 5 minutes)
+
+---
+
 ## DevSecOps Pipeline
 
 Every service deployed through this cluster goes through:
