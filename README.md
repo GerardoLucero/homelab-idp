@@ -47,10 +47,6 @@ This repo contains infrastructure manifests, Helm values templates, and architec
 
 ---
 
-## 📚 Full Stack
-
----
-
 ## 🛠 Complete Stack
 
 | Component | Tool | Role |
@@ -68,7 +64,10 @@ This repo contains infrastructure manifests, Helm values templates, and architec
 | **Code Quality** | SonarQube | SAST scanning, quality gates |
 | **Message Broker** | Apache Kafka (Strimzi) | Event streaming, CDC, audit logs |
 | **Monitoring** | Prometheus + Grafana | Metrics, dashboards, alerts |
-| **Logging** | Loki | Log aggregation |
+| **Logging** | Loki (1 mo retention) | Log aggregation, audit trail |
+| **Runtime Security** | Falco (eBPF) | Kernel-level syscall monitoring |
+| **Log Shipping** | Promtail | Agent-based log collection |
+| **Alerting** | AlertManager + Webhooks | Real-time alerts → Telegram/Email |
 | **Storage** | Longhorn | Persistent block storage (HA) |
 | **TLS Certs** | cert-manager + Let's Encrypt | Automatic, wildcard certificates |
 | **Tunnel** | Cloudflare Tunnel | Zero-trust access, no firewall holes |
@@ -169,6 +168,66 @@ Stage 1: QUALITY          Stage 2: BUILD           Stage 3: RELEASE        Stage
 
 ---
 
+## 🚨 Runtime Security & Alerting
+
+**3-layer defense + real-time notifications:**
+
+```
+Layer 1: Admission Control (DEPLOY TIME)
+  └─ Kyverno policies block unsigned/risky images
+
+Layer 2: Runtime Monitoring (RUNTIME)
+  ├─ Falco (eBPF) — syscall tracing, anomaly detection
+  ├─ Promtail — log collection to Loki
+  └─ Prometheus — infrastructure metrics
+
+Layer 3: Alerting & Response (ALERT TIME)
+  ├─ AlertManager routes critical events
+  └─ notify-bot webhooks to Telegram + Email (via external service)
+```
+
+**Stack details:**
+- **Falco**: 6 DaemonSet pods (eBPF, kernel-level)
+  - Detects: suspicious process execution, network redirects, unauthorized file access
+  - ~250m CPU + 256Mi RAM per pod
+  
+- **Loki**: 1 StatefulSet (10Gi Longhorn storage)
+  - 1-month retention (practical for homelab)
+  - Searchable via Grafana
+  - Audit trail for compliance
+  
+- **Alerting**: AlertManager webhooks
+  - Primary: Telegram (instant notifications)
+  - Backup: Email (redundancy)
+  - Config: `/etc/alertmanager/alertmanager.yaml` (webhook URLs, not credentials)
+  - **SECURITY NOTE:** All secrets (tokens, passwords, chat IDs) stored in K8s Secrets, NOT in manifests
+
+**How alerts flow:**
+1. Falco detects suspicious syscall → writes to stdout
+2. Promtail ships logs → Loki
+3. Prometheus scrapes metrics
+4. AlertManager rules trigger → webhook to notify service
+5. notify-bot sends Telegram message + Email (opt-in via env vars)
+
+**No sensitive data in Git:**
+```yaml
+# ✅ SAFE: manifests/alertmanager/alertmanager-values.yaml
+webhookConfigs:
+  - url: http://notify-bot.shu:8080/alert  # Service URL, not credentials
+
+# ✅ SAFE: Secrets stored separately
+apiVersion: v1
+kind: Secret
+metadata:
+  name: telegram-shu
+type: Opaque
+stringData:
+  token: <BASE64_ENCODED>  # Never in git
+  chat_id: <BASE64_ENCODED>  # Never in git
+```
+
+---
+
 ## Repository Structure
 
 ```
@@ -185,7 +244,10 @@ homelab-idp/
 │   ├── harbor/            # Container registry values
 │   ├── kong/              # API gateway values
 │   ├── authentik/         # Identity provider values
-│   └── monitoring/        # Prometheus + Grafana values
+│   ├── monitoring/        # Prometheus + Grafana values
+│   ├── falco/             # Runtime security + eBPF (DaemonSet)
+│   ├── loki/              # Log aggregation (StatefulSet + Promtail agents)
+│   └── alertmanager/      # AlertManager webhooks + routing rules
 ├── docs/                  # Installation guides
 └── .env.example           # Required variables reference
 ```
